@@ -1,5 +1,6 @@
 const assert = require("node:assert/strict");
 const ventas = require("./datos");
+const { generarVentas } = require("./generador");
 const {
   totalVendido,
   totalVendidoM,
@@ -7,6 +8,8 @@ const {
   unidadesVendidasM,
   ventasPorCiudad,
   ventasPorCiudadM,
+  totalCiudadCadena,
+  totalCiudadUnaPasada,
   totalPorCiudad,
   unidadesPorProducto,
   topProductosPorValor,
@@ -24,6 +27,23 @@ console.log("=== 1. VERIFICACIÓN DE PARES (CICLO VS MÉTODOS) ===");
 
 assert.deepEqual(clientesRecurrentes(ventas), ["C01", "C02", "C03"]);
 console.log("[OK] clientesRecurrentes (muestra Día 1) -> C01, C02, C03");
+
+const ventasGeneradas = generarVentas(10000);
+const totalCiudadGeneradoCadena = totalCiudadCadena(
+  ventasGeneradas,
+  "Medellín"
+);
+const totalCiudadGeneradoUnaPasada = totalCiudadUnaPasada(
+  ventasGeneradas,
+  "Medellín"
+);
+const totalCiudadGeneradoOriginal = ventasPorCiudad(
+  ventasGeneradas,
+  "Medellín"
+);
+assert.equal(totalCiudadGeneradoCadena, totalCiudadGeneradoUnaPasada);
+assert.equal(totalCiudadGeneradoCadena, totalCiudadGeneradoOriginal);
+console.log("[OK] totalCiudad versions match ventasPorCiudad (10.000 ventas)");
 
 // Pruebas con muestra completa
 compararPar("totalVendido (muestra completa)", totalVendido(ventas), totalVendidoM(ventas));

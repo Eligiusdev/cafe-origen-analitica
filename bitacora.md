@@ -276,3 +276,55 @@ La estimación para un millón se ancla en la medición real de 100.000 y en el 
 ### Conclusión para la gerente
 
 El reporte compara las ventas entre sí, no procesa cada venta una sola vez. Al duplicar el historial, el trabajo puede acercarse a cuatro veces más; con 100.000 registros ya tardó más de un minuto. En historiales con muchos clientes repetidos, la búsqueda adicional para evitar nombres duplicados puede hacerlo todavía más lento. Por eso no conviene usar este reporte sobre todo el historial anual tal como está.
+
+## 10. Complejidad espacial: reporte por ciudad
+
+Se agregaron dos versiones equivalentes para sumar ventas válidas de una ciudad:
+
+- `totalCiudadCadena(ventas, ciudad)` normaliza cada ciudad con `map`, filtra las ventas válidas de esa ciudad, transforma las ventas a subtotales con otro `map` y suma con `reduce`.
+- `totalCiudadUnaPasada(ventas, ciudad)` normaliza y filtra dentro de un solo ciclo `for...of`, acumulando el total en un escalar.
+
+La verificación genera 10.000 ventas y confirma que ambas funciones devuelven exactamente el mismo total para `"Medellín"`.
+
+| Versión | Recorridos de colecciones | Arreglos nuevos | Tiempo | Espacio auxiliar |
+| :--- | ---: | ---: | :--- | :--- |
+| `totalCiudadCadena` | 4 etapas: `map` y `filter` recorren `n`; el segundo `map` y `reduce` recorren las `m` ventas filtradas (máximo `4n` visitas). | 3 (`map`, `filter`, `map`); el primer `map` también crea un objeto auxiliar por venta. | O(4n), que se simplifica a **O(n)** al eliminar la constante 4. | **O(n)** por los arreglos y objetos intermedios. |
+| `totalCiudadUnaPasada` | 1 recorrido de `n` ventas. | 0. | **O(n)**. | **O(1)**: solo mantiene la ciudad buscada, el total y los valores temporales de cada iteración. |
+
+Aunque la cadena recorre hasta cuatro veces sus colecciones, cuatro veces una entrada de tamaño `n` sigue creciendo linealmente: **O(4n) = O(n)**. La ventaja de la pasada única no es cambiar la complejidad temporal, sino reducir los recorridos constantes y evitar memoria temporal proporcional al historial.
+
+### Clasificación espacial del motor
+
+La complejidad siguiente mide memoria adicional máxima respecto a la entrada. Se consideran las funciones del motor analítico en `src/analitica.js` y el generador en `src/generador.js`; la salida que construye el generador también requiere espacio proporcional a `n`.
+
+| Función | Espacio | Motivo |
+| :--- | :--- | :--- |
+| `valorVenta` | **O(1)** | Calcula un subtotal escalar. |
+| `totalVendido` | **O(1)** | Mantiene un acumulador escalar. |
+| `totalVendidoInstrumentado` | **O(1)** | Usa un acumulador y el contador recibido por referencia. |
+| `unidadesVendidas` | **O(1)** | Mantiene un acumulador escalar. |
+| `ventaMayor` | **O(1)** | Mantiene el máximo y una referencia a la venta existente. |
+| `ventaMayorInstrumentada` | **O(1)** | Mantiene el máximo, una referencia y el contador recibido. |
+| `ticketPromedio` | **O(1)** | Mantiene suma y cantidad de ventas válidas. |
+| `ventasPorCiudad` | **O(1)** | Mantiene el total; solo normaliza la ciudad actual. |
+| `normalizarNombreCiudad` | **O(1)** | Produce una cadena temporal de tamaño acotado por el nombre de ciudad. |
+| `totalVendidoM` | **O(n)** | `filter` y `map` crean arreglos intermedios proporcionales a las ventas. |
+| `unidadesVendidasM` | **O(n)** | `filter` y `map` crean arreglos intermedios proporcionales a las ventas. |
+| `ventasPorCiudadM` | **O(n)** | `filter` y `map` crean arreglos intermedios. |
+| `totalCiudadCadena` | **O(n)** | Crea tres arreglos intermedios y objetos normalizados por venta. |
+| `totalCiudadUnaPasada` | **O(1)** | Usa un solo acumulador y no crea arreglos. |
+| `totalPorCiudad` | **O(n)** | Crea un arreglo filtrado y un diccionario con hasta `n` ciudades distintas. |
+| `totalPorCiudadInstrumentado` | **O(n)** | El diccionario de resultados puede contener hasta `n` claves distintas. |
+| `clientesRecurrentes` | **O(n)** | El arreglo de salida puede contener hasta `n` clientes. |
+| `primeraVenta` | **O(1)** | Devuelve una referencia al primer elemento sin copiar la colección. |
+| `unidadesPorProducto` | **O(n)** | Crea un arreglo filtrado y un diccionario de productos. |
+| `topProductosPorValor` | **O(n)** | El filtro, diccionario, entradas, mapeo, copia para ordenar y resultado pueden ocupar espacio proporcional a la cantidad de productos, que puede llegar a `n`. |
+| `ventasDelDia` | **O(n)** | `filter` crea un arreglo con hasta `n` ventas. |
+| `enteroAleatorio` | **O(1)** | Calcula y devuelve un entero. |
+| `generarVentas` | **O(n)** | Construye y devuelve el arreglo de `n` ventas. |
+
+Las versiones instrumentadas reciben un contador creado por quien las llama; ese objeto externo no cambia su espacio auxiliar asintótico. `totalPorCiudad` y `topProductosPorValor` no son O(1): el número de claves distintas puede crecer con la entrada aunque, en los datos generados actualmente, los catálogos sean fijos.
+
+### Decisión para producción
+
+Se deja `totalCiudadUnaPasada` como la opción de producción para el servidor con memoria limitada. Ambas versiones son O(n) en tiempo y son legibles, pero la pasada única evita tres arreglos y los objetos normalizados que crearía la cadena. `totalCiudadCadena` se conserva en el motor como comparación didáctica y para verificar que ambas estrategias producen el mismo resultado.

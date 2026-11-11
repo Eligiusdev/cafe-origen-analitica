@@ -143,6 +143,39 @@ function ventasPorCiudadM(ventas, ciudad) {
     .reduce((acum, subtotal) => acum + subtotal, 0);
 }
 
+function totalCiudadCadena(ventas, ciudad) {
+  if (!ciudad) return 0;
+  const ciudadBuscada = ciudad.trim().toLowerCase();
+
+  return ventas
+    .map((venta) => ({
+      venta,
+      ciudad: venta.ciudad.trim().toLowerCase()
+    }))
+    .filter(
+      (item) => item.venta.cantidad > 0 && item.ciudad === ciudadBuscada
+    )
+    .map((item) => valorVenta(item.venta))
+    .reduce((total, subtotal) => total + subtotal, 0);
+}
+
+function totalCiudadUnaPasada(ventas, ciudad) {
+  if (!ciudad) return 0;
+  const ciudadBuscada = ciudad.trim().toLowerCase();
+  let total = 0;
+
+  for (const venta of ventas) {
+    if (
+      venta.cantidad > 0 &&
+      venta.ciudad.trim().toLowerCase() === ciudadBuscada
+    ) {
+      total += valorVenta(venta);
+    }
+  }
+
+  return total;
+}
+
 function totalPorCiudad(ventas) {
   return ventas
     .filter((v) => v.cantidad > 0)
@@ -247,6 +280,8 @@ module.exports = {
   totalVendidoM,
   unidadesVendidasM,
   ventasPorCiudadM,
+  totalCiudadCadena,
+  totalCiudadUnaPasada,
   totalPorCiudad,
   totalPorCiudadInstrumentado,
   clientesRecurrentes,

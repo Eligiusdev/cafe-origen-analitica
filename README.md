@@ -10,6 +10,7 @@ Proyecto de exploración, auditoría de calidad de datos y análisis de historia
 - `src/generador.js`: Genera historiales de ventas aleatorios con el esquema del proyecto.
 - `src/medir.js`: Compara el conteo de operaciones de funciones lineales y constantes.
 - `src/medir_recurrentes.js`: Mide el tiempo del reporte de clientes recurrentes.
+- `totalCiudadCadena` y `totalCiudadUnaPasada`: Comparan memoria y recorridos al sumar ventas por ciudad.
 - `bitacora.md`: Diccionario de datos y decisiones sobre los casos borde encontrados.
 
 ## Ejecución
