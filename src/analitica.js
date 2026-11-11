@@ -171,6 +171,23 @@ function totalPorCiudadInstrumentado(ventas, contador) {
   return totales;
 }
 
+function clientesRecurrentes(ventas) {
+  const recurrentes = [];
+
+  for (let i = 0; i < ventas.length; i += 1) {
+    for (let j = i + 1; j < ventas.length; j += 1) {
+      if (
+        ventas[i].cliente === ventas[j].cliente &&
+        !recurrentes.includes(ventas[i].cliente)
+      ) {
+        recurrentes.push(ventas[i].cliente);
+      }
+    }
+  }
+
+  return recurrentes;
+}
+
 function primeraVenta(ventas, contador) {
   contador.operaciones += 1;
   return ventas[0] || null;
@@ -232,6 +249,7 @@ module.exports = {
   ventasPorCiudadM,
   totalPorCiudad,
   totalPorCiudadInstrumentado,
+  clientesRecurrentes,
   primeraVenta,
   unidadesPorProducto,
   topProductosPorValor,

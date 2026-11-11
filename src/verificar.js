@@ -1,3 +1,4 @@
+const assert = require("node:assert/strict");
 const ventas = require("./datos");
 const {
   totalVendido,
@@ -8,7 +9,8 @@ const {
   ventasPorCiudadM,
   totalPorCiudad,
   unidadesPorProducto,
-  topProductosPorValor
+  topProductosPorValor,
+  clientesRecurrentes
 } = require("./analitica");
 
 function compararPar(nombrePrueba, resultadoCiclo, resultadoMetodo) {
@@ -19,6 +21,9 @@ function compararPar(nombrePrueba, resultadoCiclo, resultadoMetodo) {
 }
 
 console.log("=== 1. VERIFICACIÓN DE PARES (CICLO VS MÉTODOS) ===");
+
+assert.deepEqual(clientesRecurrentes(ventas), ["C01", "C02", "C03"]);
+console.log("[OK] clientesRecurrentes (muestra Día 1) -> C01, C02, C03");
 
 // Pruebas con muestra completa
 compararPar("totalVendido (muestra completa)", totalVendido(ventas), totalVendidoM(ventas));

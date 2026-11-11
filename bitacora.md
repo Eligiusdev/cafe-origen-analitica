@@ -229,3 +229,50 @@ En cada aumento de 10 veces en `n`, los conteos de las tres funciones de recorri
 | `primeraVenta` | **O(1)** | Solo consulta `ventas[0]`; el tamaño del arreglo no cambia el número de accesos. |
 
 Ninguna de estas funciones es **O(n²)**: no hay ciclos anidados ni un recorrido completo por cada elemento. Los conteos medidos respaldan las clasificaciones lineales y constante.
+
+## 9. Reporte de clientes recurrentes: costo de los ciclos anidados
+
+Se agregó `clientesRecurrentes(ventas)` a `src/analitica.js` conservando el algoritmo del reporte: compara cada par de ventas y utiliza `recurrentes.includes()` para no devolver dos veces al mismo cliente.
+
+### Verificación y traza con cinco ventas
+
+Con el historial del Día 1, `clientesRecurrentes(ventas)` devuelve `["C01", "C02", "C03"]`. Para contar comparaciones se toma como comparación principal cada igualdad `ventas[i].cliente === ventas[j].cliente`; las búsquedas de `includes` se cuentan por separado.
+
+Traza para `[C01, C02, C01, C03, C02]`:
+
+| Índice `i` | Ventas posteriores comparadas | Igualdades de cliente | Comparaciones dentro de `includes` |
+| ---: | :--- | ---: | ---: |
+| 0 | C02, C01, C03, C02 | 4 | 0 (se encuentra C01 por primera vez) |
+| 1 | C01, C03, C02 | 3 | 1 (busca C02 en `[C01]`) |
+| 2 | C03, C02 | 2 | 0 |
+| 3 | C02 | 1 | 0 |
+| **Total** |  | **10** | **1** |
+
+El ciclo interno visita todos los pares con `i < j`: con `n` ventas hace `n(n - 1) / 2` igualdades de clientes. Para cinco ventas son 10; ese componente crece como **O(n²)**. En esta traza se hace además una comparación de `includes`, para un total de 11 comparaciones si contamos ambos tipos.
+
+### Medición de tiempo
+
+`node src/medir_recurrentes.js` usa `generarVentas` y `console.time`/`console.timeEnd`; el tiempo medido corresponde solo a `clientesRecurrentes`, no a la generación aleatoria de los datos. Los resultados observados fueron:
+
+| Ventas (`n`) | Tiempo |
+| ---: | ---: |
+| 1.000 | 3,20 ms |
+| 2.000 | 15,10 ms |
+| 4.000 | 55,53 ms |
+| 8.000 | 275,21 ms |
+| 16.000 | 1.004,59 ms |
+| 100.000 | 63.973,32 ms (63,97 s) |
+
+En las primeras cuatro duplicaciones el tiempo creció aproximadamente **4,72×, 3,68×, 4,96× y 3,65×**, respectivamente. La variación es esperable en una medición de tiempo real; la tendencia de multiplicarse cerca de cuatro al duplicar `n` concuerda con **O(n²)**. La prueba de 100.000 se ejecutó porque, extrapolando cuadráticamente desde 16.000, se estimaban 39,24 s, menos del límite de dos minutos. El resultado fue 63,97 s, más alto que la proyección.
+
+### Estimaciones
+
+La estimación para un millón se ancla en la medición real de 100.000 y en el crecimiento cuadrático observado para los tamaños menores: multiplicar `n` por 10 implica multiplicar el tiempo estimado por `10² = 100`. Por tanto, `63.973,32 ms × 100 = 6.397.332 ms`, aproximadamente **106,62 minutos**. Es una proyección, no una medición; la diferencia entre la primera proyección de 100.000 (39,24 s) y su tiempo real (63,97 s) evidencia que la estimación puede desviarse.
+
+### Costo oculto de `includes` y peor caso
+
+`includes` recorre `recurrentes` hasta hallar al cliente o llegar al final. No se ejecuta en cada pareja, sino cuando dos ventas tienen el mismo cliente; cada llamada puede costar **O(r)**, donde `r` es el número de clientes ya registrados. Con un historial adverso se pueden registrar Θ(n) clientes recurrentes antes de procesar Θ(n²) pares de otro cliente repetido; esas búsquedas recorren Θ(n) entradas y agregan hasta **O(n³)** trabajo en el peor caso. Por eso el doble ciclo por sí solo tiene costo O(n²), pero la función completa con `includes` puede llegar a O(n³); el generador aleatorio medido mostró una tendencia aproximadamente cuadrática, no un límite para todos los historiales.
+
+### Conclusión para la gerente
+
+El reporte compara las ventas entre sí, no procesa cada venta una sola vez. Al duplicar el historial, el trabajo puede acercarse a cuatro veces más; con 100.000 registros ya tardó más de un minuto. En historiales con muchos clientes repetidos, la búsqueda adicional para evitar nombres duplicados puede hacerlo todavía más lento. Por eso no conviene usar este reporte sobre todo el historial anual tal como está.
