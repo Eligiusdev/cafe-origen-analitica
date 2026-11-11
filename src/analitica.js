@@ -19,6 +19,18 @@ function totalVendido(ventas) {
   return total;
 }
 
+function totalVendidoInstrumentado(ventas, contador) {
+  let total = 0;
+  for (const venta of ventas) {
+    contador.operaciones += 1;
+    contador.operaciones += 1;
+    if (venta.cantidad > 0) {
+      total += valorVenta(venta);
+    }
+  }
+  return total;
+}
+
 function unidadesVendidas(ventas) {
   let totalUnidades = 0;
   for (const venta of ventas) {
@@ -36,6 +48,25 @@ function ventaMayor(ventas) {
   for (const venta of ventas) {
     if (venta.cantidad > 0) {
       const montoActual = valorVenta(venta);
+      if (montoActual > montoMaximo) {
+        montoMaximo = montoActual;
+        mayorRegistro = venta;
+      }
+    }
+  }
+  return mayorRegistro;
+}
+
+function ventaMayorInstrumentada(ventas, contador) {
+  let mayorRegistro = null;
+  let montoMaximo = -1;
+
+  for (const venta of ventas) {
+    contador.operaciones += 1;
+    contador.operaciones += 1;
+    if (venta.cantidad > 0) {
+      const montoActual = valorVenta(venta);
+      contador.operaciones += 1;
       if (montoActual > montoMaximo) {
         montoMaximo = montoActual;
         mayorRegistro = venta;
@@ -122,6 +153,29 @@ function totalPorCiudad(ventas) {
     }, {});
 }
 
+function totalPorCiudadInstrumentado(ventas, contador) {
+  const totales = {};
+
+  for (const venta of ventas) {
+    contador.operaciones += 1;
+    contador.operaciones += 1;
+    if (venta.cantidad > 0) {
+      const claveCiudad = normalizarNombreCiudad(venta.ciudad);
+      const existeCiudad = Object.prototype.hasOwnProperty.call(totales, claveCiudad);
+      contador.operaciones += 1;
+      totales[claveCiudad] =
+        (existeCiudad ? totales[claveCiudad] : 0) + valorVenta(venta);
+    }
+  }
+
+  return totales;
+}
+
+function primeraVenta(ventas, contador) {
+  contador.operaciones += 1;
+  return ventas[0] || null;
+}
+
 function unidadesPorProducto(ventas) {
   return ventas
     .filter((v) => v.cantidad > 0)
@@ -167,14 +221,18 @@ function ventasDelDia(ventas, fecha) {
 module.exports = {
   valorVenta,
   totalVendido,
+  totalVendidoInstrumentado,
   unidadesVendidas,
   ventaMayor,
+  ventaMayorInstrumentada,
   ticketPromedio,
   ventasPorCiudad,
   totalVendidoM,
   unidadesVendidasM,
   ventasPorCiudadM,
   totalPorCiudad,
+  totalPorCiudadInstrumentado,
+  primeraVenta,
   unidadesPorProducto,
   topProductosPorValor,
   ventasDelDia

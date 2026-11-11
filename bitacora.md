@@ -172,3 +172,60 @@ Para reemplazar los ciclos manuales por tuberías declarativas (`filter`, `map`,
   1. `Origen Huila 500 g`: `$294.000` (7 unidades × `$42.000`)
   2. `Origen Sierra 500 g`: `$225.000` (5 unidades × `$45.000`)
   3. `Prensa francesa`: `$190.000` (2 unidades × `$95.000`)
+
+## 7. Registro de depuración sistemática (Reporte de Gerencia — v0.1)
+
+La gerencia reportó dos fallos observados en una versión preliminar externa. A continuación se documenta el análisis de causa raíz, la reproducción controlada y la demostración de por qué el motor **Café Origen v0.1** es inmune a ambos defectos.
+
+---
+
+### Caso de Depuración 1: Duplicación de ciudades (`"Bogotá"` aparece dos veces)
+
+* **Síntoma:** En la tabla de ventas por ciudad de la versión preliminar del compañero, aparecían dos filas separadas para la misma ciudad: `"Bogotá"` y `"Bogotá "` (o `"Medellín"` y `"medellín"`), dividiendo el dinero acumulado en dos grupos distintos.
+* **Entrada que lo produce:** Registros cuya propiedad `ciudad` contiene espacios en blanco al inicio/final o variaciones de mayúsculas/minúsculas, por ejemplo:
+  ```js
+  [
+    { id: 2, ciudad: "Bogotá", cantidad: 1, precio: 26000 },
+    { id: 99, ciudad: "Bogotá ", cantidad: 1, precio: 120000 },
+    { id: 5, ciudad: "medellín", cantidad: 3, precio: 45000 }
+  ]
+  ```
+
+## 8. Medición del crecimiento de operaciones
+
+### Predicción previa
+
+Antes de ejecutar `node src/medir.js`, predigo que al multiplicar `n` por 10:
+
+| Función | Predicción del crecimiento |
+| :--- | :--- |
+| `totalVendidoInstrumentado` | Aproximadamente 10 veces más operaciones: recorre cada venta y evalúa una condición por elemento. |
+| `ventaMayorInstrumentada` | Aproximadamente 10 veces más operaciones: visita cada venta y compara su valor con el máximo. |
+| `totalPorCiudadInstrumentado` | Aproximadamente 10 veces más operaciones: recorre cada venta y actualiza un grupo de ciudad mediante una búsqueda de costo constante promedio. |
+| `primeraVenta` | El mismo número de operaciones: solo accede al índice `0`, sin recorrer la colección. |
+
+El contador registra una operación por elemento visitado y una por cada comparación contabilizada en el código instrumentado. Por ello, `totalVendidoInstrumentado` suma dos operaciones por venta; `ventaMayorInstrumentada`, tres por venta válida; y `totalPorCiudadInstrumentado`, tres por venta válida (visita, condición de cantidad y existencia de ciudad). El generador produce cantidades de 1 a 5, así que todas las ventas medidas son válidas.
+
+### Resultados observados
+
+Ejecutando `node src/medir.js`, la tabla mostró:
+
+| n | `totalVendido` | `ventaMayor` | `totalPorCiudad` | `primeraVenta` |
+| ---: | ---: | ---: | ---: | ---: |
+| 100 | 200 | 300 | 300 | 1 |
+| 1.000 | 2.000 | 3.000 | 3.000 | 1 |
+| 10.000 | 20.000 | 30.000 | 30.000 | 1 |
+| 100.000 | 200.000 | 300.000 | 300.000 | 1 |
+
+En cada aumento de 10 veces en `n`, los conteos de las tres funciones de recorrido también aumentan exactamente 10 veces bajo este modelo de conteo; el de `primeraVenta` permanece en 1. Los resultados coinciden con la predicción.
+
+### Clasificación Big O y justificación
+
+| Función | Complejidad | Justificación |
+| :--- | :--- | :--- |
+| `totalVendidoInstrumentado` | **O(n)** | Un único ciclo visita `n` elementos y hace una cantidad fija de trabajo por venta. |
+| `ventaMayorInstrumentada` | **O(n)** | Un único ciclo compara cada venta con el máximo actual; el trabajo por iteración es constante. |
+| `totalPorCiudadInstrumentado` | **O(n)** | Un único ciclo procesa cada venta y agrupa usando claves de ciudad. El catálogo de ciudades es fijo, por lo que la búsqueda promedio en el objeto no agrega otro recorrido. |
+| `primeraVenta` | **O(1)** | Solo consulta `ventas[0]`; el tamaño del arreglo no cambia el número de accesos. |
+
+Ninguna de estas funciones es **O(n²)**: no hay ciclos anidados ni un recorrido completo por cada elemento. Los conteos medidos respaldan las clasificaciones lineales y constante.
