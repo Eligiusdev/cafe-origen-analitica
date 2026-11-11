@@ -80,16 +80,12 @@ function ventasPorCiudad(ventas, ciudad) {
  * ==========================================
  */
 
-// Auxiliar para normalizar texto a Title Case ("  medellín " -> "Medellín")
 function normalizarNombreCiudad(ciudad) {
   const limpia = ciudad.trim().toLowerCase();
   if (!limpia) return "";
   return limpia.charAt(0).toUpperCase() + limpia.slice(1);
 }
 
-/**
- * 1. Equivalente a totalVendido usando filter, map y reduce.
- */
 function totalVendidoM(ventas) {
   return ventas
     .filter((v) => v.cantidad > 0)
@@ -97,9 +93,6 @@ function totalVendidoM(ventas) {
     .reduce((acum, subtotal) => acum + subtotal, 0);
 }
 
-/**
- * 2. Equivalente a unidadesVendidas usando filter, map y reduce.
- */
 function unidadesVendidasM(ventas) {
   return ventas
     .filter((v) => v.cantidad > 0)
@@ -107,9 +100,6 @@ function unidadesVendidasM(ventas) {
     .reduce((acum, cant) => acum + cant, 0);
 }
 
-/**
- * 3. Equivalente a ventasPorCiudad usando filter, map y reduce.
- */
 function ventasPorCiudadM(ventas, ciudad) {
   if (!ciudad) return 0;
   const ciudadBuscada = ciudad.trim().toLowerCase();
@@ -122,10 +112,6 @@ function ventasPorCiudadM(ventas, ciudad) {
     .reduce((acum, subtotal) => acum + subtotal, 0);
 }
 
-/**
- * 4. Agrupa por ciudad normalizada y devuelve un diccionario { Ciudad: totalVendido }.
- * Consolida "Medellín", "medellín" y "Bogotá " en exactamente 4 ciudades.
- */
 function totalPorCiudad(ventas) {
   return ventas
     .filter((v) => v.cantidad > 0)
@@ -136,9 +122,6 @@ function totalPorCiudad(ventas) {
     }, {});
 }
 
-/**
- * 5. Agrupa por producto y suma las unidades físicas vendidas { Producto: totalUnidades }.
- */
 function unidadesPorProducto(ventas) {
   return ventas
     .filter((v) => v.cantidad > 0)
@@ -149,12 +132,7 @@ function unidadesPorProducto(ventas) {
     }, {});
 }
 
-/**
- * 6. Devuelve los k productos que más dinero generaron, ordenados de mayor a menor,
- * sin mutar el arreglo original.
- */
 function topProductosPorValor(ventas, k = 3) {
-  // 1. Agrupar ingresos por producto en un objeto diccionario
   const ingresosPorProducto = ventas
     .filter((v) => v.cantidad > 0)
     .reduce((diccionario, venta) => {
@@ -163,7 +141,6 @@ function topProductosPorValor(ventas, k = 3) {
       return diccionario;
     }, {});
 
-  // 2. Transformar entradas a objetos { producto, total }
   const listaProductos = Object.entries(ingresosPorProducto).map(
     ([producto, total]) => ({
       producto,
@@ -171,10 +148,20 @@ function topProductosPorValor(ventas, k = 3) {
     })
   );
 
-  // 3. Copiar con spread (...), ordenar de mayor a menor y recortar con slice
   return [...listaProductos]
     .sort((a, b) => b.total - a.total)
     .slice(0, k);
+}
+
+/**
+ * 7. Filtra y devuelve las ventas válidas correspondientes a una fecha exacta (YYYY-MM-DD).
+ */
+function ventasDelDia(ventas, fecha) {
+  if (!fecha) return [];
+  const fechaBuscada = fecha.trim();
+  return ventas.filter(
+    (v) => v.cantidad > 0 && v.fecha.trim() === fechaBuscada
+  );
 }
 
 module.exports = {
@@ -189,5 +176,6 @@ module.exports = {
   ventasPorCiudadM,
   totalPorCiudad,
   unidadesPorProducto,
-  topProductosPorValor
+  topProductosPorValor,
+  ventasDelDia
 };

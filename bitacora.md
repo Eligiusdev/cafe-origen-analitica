@@ -147,3 +147,28 @@ Para garantizar que ninguna función lance excepciones ni retorne `NaN` o `undef
 * **Resultado manual `totalVendido(ventas)`:** `985000` (coincide con el programa).
 * **Resultado manual `unidadesVendidas(ventas)`:** `21` (coincide con el programa).
 * **Resultado manual `ticketPromedio(ventas)`:** `985000 / 11 = 89545.45454545454` (coincide con el programa).
+* ---
+
+## 6. Análisis de funciones con métodos de arreglo (Las 5 preguntas sobre colecciones)
+
+Para reemplazar los ciclos manuales por tuberías declarativas (`filter`, `map`, `reduce`, `Object.entries`, `sort` y `slice`) sin alterar los resultados, se definió cómo responde cada función a las cinco preguntas clave sobre colecciones:
+
+| Función | 1. ¿Qué recorro? | 2. ¿Qué filtro? | 3. ¿Qué transformo? | 4. ¿Qué acumulo? | 5. ¿Cómo agrupo? |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **`totalVendidoM(ventas)`** | El arreglo de objetos `ventas`. | Las ventas válidas con `v.cantidad > 0` (`filter`). | Cada objeto `venta` en su subtotal numérico `valorVenta(v)` (`map`). | La suma de todos los subtotales iniciando en `0` (`reduce`). | No agrupa (reduce toda la colección a un único número escalar). |
+| **`unidadesVendidasM(ventas)`** | El arreglo de objetos `ventas`. | Las ventas válidas con `v.cantidad > 0` (`filter`). | Cada objeto `venta` en su número de unidades `v.cantidad` (`map`). | La suma total de unidades vendidas iniciando en `0` (`reduce`). | No agrupa (reduce toda la colección a un único entero). |
+| **`ventasPorCiudadM(ventas, ciudad)`** | El arreglo de objetos `ventas`. | Las ventas con `v.cantidad > 0` cuya ciudad normalizada (`trim().toLowerCase()`) coincida con la ciudad buscada (`filter`). | Cada venta filtrada en su ingreso `valorVenta(v)` (`map`). | La suma de los subtotales de esa ciudad iniciando en `0` (`reduce`). | No crea diccionario; aisla un único grupo mediante el predicado del `filter`. |
+| **`totalPorCiudad(ventas)`** | El arreglo de objetos `ventas`. | Las ventas efectivas con `v.cantidad > 0` (`filter`). | El nombre de `v.ciudad` a formato estándar (*Title Case* sin espacios sobrantes: `"Medellín"`, `"Bogotá"`, `"Cali"`, `"Pereira"`). | El valor monetario `valorVenta(venta)` dentro de la clave de cada ciudad iniciando en `{}` (`reduce`). | Usando un objeto como diccionario `{ [ciudadNormalizada]: totalAcumulado }`. |
+| **`unidadesPorProducto(ventas)`** | El arreglo de objetos `ventas`. | Las ventas efectivas con `v.cantidad > 0` (`filter`). | El nombre del producto limpio con `v.producto.trim()`. | La cantidad de unidades `v.cantidad` asociada a cada producto iniciando en `{}` (`reduce`). | Usando un objeto como diccionario `{ [producto]: unidadesAcumuladas }`. |
+| **`topProductosPorValor(ventas, k)`** | 1) El arreglo `ventas` y 2) Las entradas `Object.entries()` del diccionario de productos. | 1) Ventas con `v.cantidad > 0` (`filter`) y 2) Los primeros `k` elementos tras ordenar (`slice(0, k)`). | Cada par `[producto, total]` de `Object.entries` en un objeto `{ producto, total }` (`map`), y una copia `[...lista]` ordenada de mayor a menor (`sort((a, b) => b.total - a.total)`). | El ingreso total `valorVenta(venta)` por cada producto en el diccionario intermedio (`reduce` con `{}`). | Agrupa primero por clave `producto` en un diccionario y luego clasifica la colección resultante en un ranking descendente sin mutar `ventas`. |
+
+### Resultados verificados de las agrupaciones
+* **`totalPorCiudad(ventas)`:**
+  * `Medellín`: `$356.000` (unifica registros `1`, `4`, `5` escrito `"medellín"` y `11`).
+  * `Bogotá`: `$276.000` (registros `2`, `6`, `7` y `12`).
+  * `Cali`: `$185.000` (registros `3` y `9`; excluye `id: 8` por `cantidad: 0`).
+  * `Pereira`: `$168.000` (registro `10`).
+* **`topProductosPorValor(ventas, 3)`:**
+  1. `Origen Huila 500 g`: `$294.000` (7 unidades × `$42.000`)
+  2. `Origen Sierra 500 g`: `$225.000` (5 unidades × `$45.000`)
+  3. `Prensa francesa`: `$190.000` (2 unidades × `$95.000`)
