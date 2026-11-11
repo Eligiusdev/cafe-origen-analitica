@@ -328,3 +328,11 @@ Las versiones instrumentadas reciben un contador creado por quien las llama; ese
 ### Decisión para producción
 
 Se deja `totalCiudadUnaPasada` como la opción de producción para el servidor con memoria limitada. Ambas versiones son O(n) en tiempo y son legibles, pero la pasada única evita tres arreglos y los objetos normalizados que crearía la cadena. `totalCiudadCadena` se conserva en el motor como comparación didáctica y para verificar que ambas estrategias producen el mismo resultado.
+
+## 11. Revisión por compañero del informe v0.2
+
+**Observación recibida:** el borrador podía dar a entender que `clientesRecurrentes` se comporta como O(n³) en el uso normal, aunque el código solo alcanza ese peor caso con una distribución adversarial. En el generador y las mediciones disponibles, el crecimiento observado es más cercano a O(n²).
+
+**Respuesta y ajuste:** acepto la observación. En `RENDIMIENTO.md` cambié el orden de la clasificación para destacar O(n²) en los datos generados y dejar O(n³) explícitamente como peor caso adversarial. El riesgo sigue siendo el mayor por la latencia observada (63,973 s con 100.000 ventas) y porque entradas adversariales pueden degradarlo más. La proyección de 106,62 minutos para un millón se basa en el tiempo medido con 100.000 ventas y supone crecimiento cuadrático; no es una garantía para cualquier distribución.
+
+La revisión también obtuvo tiempos distintos en una nueva ejecución (aproximadamente 386 ms con 10.000 ventas y 67 s con 100.000). Los conservo como confirmación de variabilidad entre ejecuciones y no sustituyo la medición base del informe: ambas series muestran que la latencia real cambia, mientras la advertencia sobre el peor caso permanece.
