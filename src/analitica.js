@@ -279,6 +279,7 @@ module.exports = {
   ventaMayorInstrumentada,
   ticketPromedio,
   ventasPorCiudad,
+  normalizarNombreCiudad,
   totalVendidoM,
   unidadesVendidasM,
   ventasPorCiudadM,

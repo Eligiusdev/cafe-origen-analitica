@@ -39,4 +39,4 @@ function generarVentas(n) {
   return ventas;
 }
 
-module.exports = { generarVentas };
+module.exports = { generarVentas, PRODUCTOS };

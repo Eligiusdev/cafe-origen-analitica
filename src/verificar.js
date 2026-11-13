@@ -2,6 +2,11 @@ const assert = require("node:assert/strict");
 const ventas = require("./datos");
 const { generarVentas } = require("./generador");
 const {
+  productoEstrellaPorCiudad,
+  comboRegaloSugerido,
+  clienteParaCupon
+} = require("./comercial");
+const {
   totalVendido,
   totalVendidoM,
   unidadesVendidas,
@@ -36,6 +41,22 @@ assert.deepEqual(
   []
 );
 console.log("[OK] clientesRecurrentes excluye ventas no efectivas");
+assert.deepEqual(clienteParaCupon(ventas), {
+  cliente: "C01",
+  compras: 3,
+  total: 221000
+});
+assert.deepEqual(
+  productoEstrellaPorCiudad(ventas).find(({ ciudad }) => ciudad === "Medellín"),
+  { ciudad: "Medellín", producto: "Origen Sierra 500 g", total: 135000 }
+);
+assert.deepEqual(comboRegaloSugerido(ventas), {
+  productos: ["Origen Huila 500 g", "Prensa francesa"],
+  clientes: 1
+});
+assert.equal(clienteParaCupon([]), null);
+assert.equal(comboRegaloSugerido([]), null);
+console.log("[OK] recomendaciones comerciales y casos vacíos");
 
 const ventasGeneradas = generarVentas(10000);
 const totalCiudadGeneradoCadena = totalCiudadCadena(
