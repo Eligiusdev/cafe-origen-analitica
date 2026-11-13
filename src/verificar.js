@@ -27,6 +27,15 @@ console.log("=== 1. VERIFICACIÓN DE PARES (CICLO VS MÉTODOS) ===");
 
 assert.deepEqual(clientesRecurrentes(ventas), ["C01", "C02", "C03"]);
 console.log("[OK] clientesRecurrentes (muestra Día 1) -> C01, C02, C03");
+assert.deepEqual(
+  clientesRecurrentes([
+    { cliente: "C01", cantidad: 1 },
+    { cliente: "C02", cantidad: 0 },
+    { cliente: "C01", cantidad: 0 }
+  ]),
+  []
+);
+console.log("[OK] clientesRecurrentes excluye ventas no efectivas");
 
 const ventasGeneradas = generarVentas(10000);
 const totalCiudadGeneradoCadena = totalCiudadCadena(

@@ -205,17 +205,19 @@ function totalPorCiudadInstrumentado(ventas, contador) {
 }
 
 function clientesRecurrentes(ventas) {
-  const recurrentes = [];
+  const comprasPorCliente = new Map();
 
-  for (let i = 0; i < ventas.length; i += 1) {
-    for (let j = i + 1; j < ventas.length; j += 1) {
-      if (
-        ventas[i].cliente === ventas[j].cliente &&
-        !recurrentes.includes(ventas[i].cliente)
-      ) {
-        recurrentes.push(ventas[i].cliente);
-      }
-    }
+  for (const venta of ventas) {
+    if (venta.cantidad <= 0) continue;
+    comprasPorCliente.set(
+      venta.cliente,
+      (comprasPorCliente.get(venta.cliente) || 0) + 1
+    );
+  }
+
+  const recurrentes = [];
+  for (const [cliente, compras] of comprasPorCliente) {
+    if (compras > 1) recurrentes.push(cliente);
   }
 
   return recurrentes;
