@@ -1,86 +1,79 @@
-# Rendimiento del motor de analítica — v0.2
+# Rendimiento del motor de analítica — v1.0
 
 ## Alcance y metodología
 
-Este informe clasifica las funciones de `src/analitica.js` y las funciones de apoyo del generador en `src/generador.js`. Se considera `n` el número de ventas, `p` la cantidad de productos distintos, `u` la cantidad de clientes distintos y `L` la longitud de un nombre de ciudad. La memoria espacial describe el espacio adicional máximo, aparte del arreglo de entrada; cuando una función devuelve una colección, se indica como parte de su espacio de salida.
+Se clasifica el motor en `src/analitica.js`, `src/comercial.js`, `src/temporal.js` y `src/generador.js`. Se considera `n` el número de ventas, `p` la cantidad de productos distintos, `u` los clientes distintos, `d` las fechas distintas y `L` la longitud de un nombre de ciudad. El espacio auxiliar excluye el arreglo de entrada y considera colecciones devueltas como espacio de salida.
 
-Las mediciones de 10.000 ventas se hicieron con Node.js v22.22.1 sobre un arreglo producido por `generarVentas(10000)`, generado antes de iniciar los cronómetros. Los tiempos lineales son promedios de cinco ejecuciones después de una ejecución de calentamiento; `clientesRecurrentes` se midió una vez por el costo de cada ejecución. Son tiempos de una máquina y una distribución de datos, no garantías de latencia. La instrumentación de operaciones cuenta visitas y comparaciones según el modelo del MiniReto 5.
+Las mediciones v1.0 se hicieron con Node.js v22.22.1. Los tiempos aislados de funciones usan arreglos generados antes de iniciar el cronómetro. `node src/medir_reportes.js` compara el proceso completo: incluye arranque de Node, generación, cálculo y escritura (stdout descartado); informa la mediana de tres ejecuciones tras una calentada. Los datos se generan aleatoriamente, así que los tiempos pueden variar y no son garantías de latencia.
 
 ## Complejidad por función
 
-| Función | Qué hace | Tiempo | Espacio adicional | Justificación y evidencia con 10.000 ventas |
+| Función | Qué hace | Tiempo | Espacio adicional | Evidencia / nota |
 | :--- | :--- | :--- | :--- | :--- |
-| `valorVenta` | Calcula cantidad × precio de una venta. | O(1) | O(1) | Una multiplicación por llamada; se invoca hasta 10.000 veces al totalizar ventas. |
-| `totalVendido` | Suma el valor de las ventas válidas. | O(n) | O(1) | Un ciclo y un acumulador; 10.000 registros: 0,164 ms. |
-| `totalVendidoInstrumentado` | Suma ventas y cuenta visitas/comparaciones. | O(n) | O(1) | Un ciclo; 20.000 operaciones medidas para 10.000 ventas válidas. |
-| `unidadesVendidas` | Suma unidades vendidas. | O(n) | O(1) | Un ciclo y un acumulador; 10.000 registros: 0,076 ms. |
-| `ventaMayor` | Busca la venta válida de mayor valor. | O(n) | O(1) | Un ciclo, máximo y referencia a una venta existente; 10.000 registros: 0,087 ms. |
-| `ventaMayorInstrumentada` | Busca la venta mayor y cuenta visitas/comparaciones. | O(n) | O(1) | Un ciclo; 30.000 operaciones medidas para 10.000 ventas válidas. |
-| `ticketPromedio` | Calcula el promedio de valor de las ventas válidas. | O(n) | O(1) | Un ciclo con suma y contador; 10.000 registros: 0,129 ms. |
-| `ventasPorCiudad` | Suma ventas válidas de una ciudad normalizada. | O(n) | O(1) | Un ciclo y un acumulador; 10.000 registros: 0,270 ms. |
-| `normalizarNombreCiudad` | Limpia y estandariza un nombre de ciudad. | O(L) | O(L) | Opera sobre la longitud `L` del nombre. En el catálogo actual `L` está acotada; se ejecuta por cada venta agrupada. |
-| `totalVendidoM` | Suma ventas con `filter`, `map` y `reduce`. | O(n) | O(n) | Tres etapas lineales y arreglos de filtrado/mapeo; 10.000 registros: 0,407 ms. |
-| `unidadesVendidasM` | Suma unidades con métodos de arreglo. | O(n) | O(n) | `filter` y `map` crean arreglos proporcionales a `n`; 10.000 registros: 0,310 ms. |
-| `ventasPorCiudadM` | Filtra, calcula subtotales y suma por ciudad. | O(n) | O(n) | `filter` y `map` crean arreglos intermedios; 10.000 registros: 0,434 ms. |
-| `totalCiudadCadena` | Normaliza, filtra, calcula subtotales y suma por ciudad. | O(n) | O(n) | Hasta cuatro etapas lineales (`map`, `filter`, `map`, `reduce`) y tres arreglos intermedios; 10.000 registros: 0,625 ms. |
-| `totalCiudadUnaPasada` | Suma por ciudad con un único `for...of`. | O(n) | O(1) | Un ciclo, sin arreglos intermedios; 10.000 registros: 0,308 ms. |
-| `totalPorCiudad` | Agrupa el valor vendido por ciudad. | O(n) | O(n) | Filtra a un arreglo y acumula en un diccionario de hasta `n` claves; 10.000 registros: 1,614 ms. |
-| `totalPorCiudadInstrumentado` | Agrupa por ciudad y cuenta operaciones. | O(n) | O(n) | Un ciclo; el diccionario de salida puede tener hasta `n` claves. El contador registró 30.000 operaciones a n=10.000. |
-| `clientesRecurrentes` | Busca clientes que aparecen en más de una venta. | O(n²) en los datos generados; O(n³) en el peor caso adversarial | O(n) | Compara `n(n-1)/2` pares y, cuando coinciden, busca con `includes` en la lista de recurrentes. Midió 411,844 ms a n=10.000 y 63,973 s a n=100.000. |
-| `primeraVenta` | Devuelve la primera venta. | O(1) | O(1) | Accede solo a `ventas[0]`; el contador registró 1 operación con 10.000 ventas. |
-| `unidadesPorProducto` | Agrupa unidades vendidas por producto. | O(n) | O(n) | Crea un arreglo filtrado y un diccionario de productos; 10.000 registros: 0,556 ms. |
-| `topProductosPorValor` | Agrupa ingresos, ordena productos y devuelve los primeros `k`. | O(n + p log p), peor caso O(n log n) | O(n) | Recorre ventas y ordena `p` productos distintos; el filtro, diccionario y arreglos ocupan O(n). Con el catálogo fijo de cinco productos: 0,531 ms para 10.000 ventas. |
-| `ventasDelDia` | Filtra ventas válidas de una fecha. | O(n) | O(n) | `filter` puede devolver hasta `n` ventas; 10.000 registros: 0,212 ms. |
-| `enteroAleatorio` | Genera un índice aleatorio. | O(1) | O(1) | Un número fijo de operaciones por llamada; el generador lo invoca cuatro veces por venta. |
-| `generarVentas` | Construye un historial de `n` ventas. | O(n) | O(n) de salida | Un ciclo crea y agrega cada venta; con n=10.000 produce 10.000 objetos y realiza 40.000 selecciones aleatorias. |
+| `valorVenta` | Calcula cantidad × precio de una venta. | O(1) | O(1) | Una multiplicación por llamada. |
+| `totalVendido` | Suma el valor de las ventas válidas. | O(n) | O(1) | Recorrido y acumulador. |
+| `totalVendidoInstrumentado` | Suma ventas y cuenta operaciones. | O(n) | O(1) | Dos operaciones contadas por venta válida. |
+| `unidadesVendidas` | Suma unidades vendidas. | O(n) | O(1) | Recorrido y acumulador. |
+| `ventaMayor` | Busca la venta válida de mayor valor. | O(n) | O(1) | Recorrido, máximo y referencia. |
+| `ventaMayorInstrumentada` | Busca el máximo y cuenta operaciones. | O(n) | O(1) | Tres operaciones contadas por venta válida. |
+| `ticketPromedio` | Calcula el promedio por venta efectiva. | O(n) | O(1) | Mantiene suma y contador. |
+| `ventasPorCiudad` | Suma ventas de una ciudad normalizada. | O(n) | O(1) | Un recorrido y un acumulador. |
+| `normalizarNombreCiudad` | Limpia y estandariza una ciudad. | O(L) | O(L) | Opera sobre la longitud del nombre. |
+| `totalVendidoM` | Suma ventas con `filter`, `map` y `reduce`. | O(n) | O(n) | Arreglos intermedios; 0,407 ms a n=10.000 en la medición base. |
+| `unidadesVendidasM` | Suma unidades con métodos de arreglo. | O(n) | O(n) | Arreglos intermedios; medición base: 0,310 ms a n=10.000. |
+| `ventasPorCiudadM` | Filtra, transforma y suma por ciudad. | O(n) | O(n) | Arreglos intermedios; medición base: 0,434 ms a n=10.000. |
+| `totalCiudadCadena` | Agrupa por ciudad mediante una cadena de métodos. | O(n) | O(n) | Hasta cuatro etapas lineales y tres arreglos intermedios. |
+| `totalCiudadUnaPasada` | Suma una ciudad en un solo recorrido. | O(n) | O(1) | Evita arreglos temporales; medición base: 0,308 ms a n=10.000. |
+| `totalPorCiudad` | Agrupa ingresos por ciudad. | O(n) promedio | O(n) | El diccionario puede contener hasta n claves. |
+| `totalPorCiudadInstrumentado` | Agrupa ingresos y cuenta operaciones. | O(n) promedio | O(n) | Conteo de 30.000 operaciones a n=10.000 en la medición base. |
+| `clientesRecurrentes` | Devuelve clientes con más de una compra efectiva. | O(n) promedio | O(u) | `Map` en una pasada; 1,38 ms (10.000) y 7,99 ms (100.000). |
+| `primeraVenta` | Devuelve el primer registro. | O(1) | O(1) | Un acceso a `ventas[0]`. |
+| `unidadesPorProducto` | Agrupa unidades por producto. | O(n) promedio | O(n) | Filtrado y diccionario. |
+| `topProductosPorValor` | Agrupa ingresos, ordena y devuelve los primeros k. | O(n + p log p) | O(n + p) | Con p=5 en el catálogo, el sort es pequeño; con datos arbitrarios p puede crecer. |
+| `ventasDelDia` | Filtra ventas efectivas por fecha. | O(n) | O(n) | `filter` puede devolver hasta n registros. |
+| `productoEstrellaPorCiudad` | Busca el producto de más ingresos por ciudad. | O(n) promedio | O(n) | Mapas ciudad-producto; 17,26 ms a n=100.000. |
+| `comboRegaloSugerido` | Cuenta clientes que comparten cada par de productos. | O(n + u·p²); O(n) con p=5 fijo | O(n) | Máximo diez pares por cliente con el catálogo actual; 37,60 ms a n=100.000. Producto no catalogado: error explícito. |
+| `clienteParaCupon` | Recomienda al cliente con más compras; desempata por gasto. | O(n) promedio | O(u) | Acumula compras e ingresos con `Map`; 15,88 ms a n=100.000. |
+| `mejorSemana` | Busca la ventana calendario de siete días con más ingresos. | O(n + d log d) | O(d) | Agrupa fechas, las ordena y desliza dos punteros; 20,86 ms a n=100.000. |
+| `enteroAleatorio` | Genera un índice aleatorio. | O(1) | O(1) | Número fijo de operaciones por llamada. |
+| `generarVentas` | Construye un historial de n ventas. | O(n) | O(n) de salida | Cuatro selecciones aleatorias por registro. |
+| `seleccionarVentas` | Lee el tamaño de `process.argv` o selecciona Día 1. | O(1) para Día 1; O(n) al generar | O(1) u O(n) de salida | Rechaza argumentos inválidos. |
+| `imprimirResumenEjecutivo` | Imprime indicadores de un subconjunto. | O(n) | O(1) | Número constante de recorridos. |
+| `ejecutarReporte` | Integra las doce secciones de v1.0. | O(n + d log d + p log p) | O(n) | Mediana de 299,76 ms a n=100.000, incluido arranque y generación. |
 
-Para `topProductosPorValor`, `p` es la cantidad de productos distintos. Con el catálogo fijo del generador, `p ≤ 5` y el ordenamiento es acotado; con datos arbitrarios, `p` puede llegar a `n`. Por eso la clasificación general incluye el costo O(p log p) del `sort`.
+Las funciones de métodos de arreglo son alternativas didácticas; sus copias pueden aumentar el uso de memoria. El reporte v1.0 prefiere las agregaciones de una pasada cuando están disponibles.
 
-En `totalCiudadCadena`, el máximo es `n + n + m + m ≤ 4n` visitas, donde `m ≤ n` es el resultado del filtro. Por la regla de simplificación, **O(4n) = O(n)**: la cadena y la pasada única tienen el mismo orden temporal, aunque la cadena usa O(n) memoria adicional y la pasada única O(1).
+`comboRegaloSugerido` usa el catálogo cerrado de cinco productos de `generador.js`, por lo que `p` es constante y cada cliente aporta a lo sumo diez pares. Si se amplía el catálogo, hay que actualizarlo y volver a medir.
 
-Las funciones instrumentadas agregan el contador recibido por el llamador y no crean estructuras proporcionales a `n`, salvo el diccionario de resultado de `totalPorCiudadInstrumentado`. Las funciones con métodos de arreglo son legibles, pero los arreglos temporales aumentan la presión de memoria.
+## Comparación v0.1 vs v1.0
 
-## Proyección a 1.000.000 de ventas
+Mediana de tres ejecuciones tras una calentada en Node.js v22.22.1. La medición abarca el proceso completo; las ventas son generadas por cada ejecución y stdout se descarta para evitar que la terminal sesgue el resultado.
 
-Para funciones lineales se proyecta el tiempo medido a n=10.000 multiplicándolo por 100: el tamaño de entrada crece 100 veces y se asume trabajo lineal. Para clientes recurrentes se usa la medición real de n=100.000 y el crecimiento cuadrático observado en los tamaños menores; pasar de 100.000 a 1.000.000 multiplica el tiempo estimado por 100. Las proyecciones suponen una distribución similar a la del generador y el mismo entorno de ejecución.
+| Ventas | Reporte v0.1 | Reporte v1.0 | Diferencia |
+| ---: | ---: | ---: | ---: |
+| 10.000 | 115,84 ms | 131,50 ms | +13,5 % |
+| 100.000 | 212,02 ms | 299,76 ms | +41,4 % |
 
-| Reporte | Medición base | Modelo | Estimación para 1.000.000 |
-| :--- | :--- | :--- | ---: |
-| `totalVendido` | 0,164 ms / 10.000 | O(n), ×100 | 16,4 ms |
-| `totalVendidoM` | 0,407 ms / 10.000 | O(n), ×100 | 40,7 ms |
-| `unidadesVendidas` | 0,076 ms / 10.000 | O(n), ×100 | 7,6 ms |
-| `unidadesVendidasM` | 0,310 ms / 10.000 | O(n), ×100 | 31,0 ms |
-| `ventaMayor` | 0,087 ms / 10.000 | O(n), ×100 | 8,7 ms |
-| `ticketPromedio` | 0,129 ms / 10.000 | O(n), ×100 | 12,9 ms |
-| `ventasPorCiudad` | 0,270 ms / 10.000 | O(n), ×100 | 27,0 ms |
-| `ventasPorCiudadM` | 0,434 ms / 10.000 | O(n), ×100 | 43,4 ms |
-| `totalCiudadCadena` | 0,625 ms / 10.000 | O(n), ×100 | 62,5 ms |
-| `totalCiudadUnaPasada` | 0,308 ms / 10.000 | O(n), ×100 | 30,8 ms |
-| `totalPorCiudad` | 1,614 ms / 10.000 | O(n), ×100 | 161,4 ms |
-| `unidadesPorProducto` | 0,556 ms / 10.000 | O(n), ×100 | 55,6 ms |
-| `topProductosPorValor` | 0,531 ms / 10.000 | O(n) con cinco productos, ×100 | 53,1 ms |
-| `ventasDelDia` | 0,212 ms / 10.000 | O(n), ×100 | 21,2 ms |
-| `clientesRecurrentes` | 63,973 s / 100.000 | O(n²) observado, ×100 | **106,62 min** |
+El v1.0 ejecuta cinco secciones adicionales, por eso el reporte completo tarda más que la línea base ligera. Aun así, 100.000 ventas se procesan en aproximadamente 0,30 s, por debajo del criterio de cinco segundos.
 
-Las proyecciones de los reportes lineales no incluyen la lectura de disco, serialización, red ni la generación del arreglo de entrada. La pasada encadenada también requiere memoria temporal O(n); no se debe interpretar su baja proyección de CPU como un bajo consumo de memoria. El cálculo de clientes recurrentes es una proyección típica, no el límite teórico: con entradas adversas, `includes` puede llevar el algoritmo a O(n³).
+Para comparar la optimización principal en trabajo equivalente, se midieron las dos implementaciones de clientes recurrentes sobre los mismos arreglos generados:
 
-Las funciones instrumentadas de MiniReto 5 tienen estas proyecciones de conteo para un millón de ventas: `totalVendidoInstrumentado`, 2.000.000 operaciones; `ventaMayorInstrumentada`, 3.000.000; `totalPorCiudadInstrumentado`, 3.000.000; y `primeraVenta`, 1. No se convierten en tiempos porque el contador agrega trabajo al propio benchmark.
+| Ventas | v0.1: doble ciclo | v1.0: `Map` | Mejora observada |
+| ---: | ---: | ---: | ---: |
+| 10.000 | 396,13 ms | 1,38 ms | 287× más rápido |
+| 100.000 | 62.448,36 ms | 7,99 ms | 7.816× más rápido |
 
-## Riesgos
+`node src/medir_recurrentes.js` reproduce esta comparación. La versión v0.1 del algoritmo puede tardar cerca de un minuto con 100.000 registros.
 
-Ordenados de mayor a menor, considerando crecimiento temporal, memoria adicional y resultados observados:
+## Proyección y riesgos
 
-1. **`clientesRecurrentes` — mayor riesgo medido.** En el generador el crecimiento observado es cercano a cuadrático, no cúbico; aun así, tardó 63,973 s con 100.000 ventas. `includes` puede llevarlo a O(n³) con una distribución adversarial.
-2. **`topProductosPorValor` — riesgo alto si crece el catálogo.** Ordena todos los productos distintos: O(n + p log p), hasta O(n log n), y conserva varias estructuras O(n). El catálogo actual pequeño reduce el costo práctico del `sort`, pero no elimina las asignaciones.
-3. **`totalCiudadCadena` y funciones M basadas en arreglos — riesgo de memoria.** Son O(n) en tiempo, pero crean uno o más arreglos de hasta `n` elementos.
-4. **`totalPorCiudad`, `totalPorCiudadInstrumentado` y `unidadesPorProducto` — riesgo de memoria según cardinalidad.** Sus diccionarios pueden crecer hasta O(n); algunos también crean un arreglo filtrado.
-5. **Recorridos únicos (`totalCiudadUnaPasada`, `totalVendido`, `ventaMayor`, `ticketPromedio`, `ventasPorCiudad`, etc.) — riesgo bajo.** Siguen tardando O(n), pero usan O(1) espacio adicional y evitan copias del historial.
-6. **Funciones O(1) (`valorVenta`, `primeraVenta`, `enteroAleatorio`) — riesgo mínimo.** Su trabajo no aumenta con el número de ventas por llamada.
+La mediana observada del reporte v1.0 a n=100.000 permite proyectar aproximadamente **3,00 s para 1.000.000** bajo el mismo catálogo, distribución y entorno. Es una extrapolación lineal, no una medición directa.
 
-## Plan de optimización
+Los riesgos actuales son la memoria O(n) de los diccionarios y arreglos que pueden crecer con cardinalidad, y el costo O(p log p) si el catálogo de productos crece mucho. `clientesRecurrentes`, `clienteParaCupon` y los recorridos de ventas son lineales; no hay ciclos anidados dependientes de n en el reporte final. Los conteos instrumentados de MiniReto 5 predicen para un millón de ventas: 2.000.000 operaciones para `totalVendidoInstrumentado`, 3.000.000 para `ventaMayorInstrumentada`, 3.000.000 para `totalPorCiudadInstrumentado` y 1 para `primeraVenta`.
 
-Prioridad: reemplazar el algoritmo de `clientesRecurrentes`, sin modificarlo todavía.
+## Estrategias aplicadas
 
-- **Trabajo repetido:** comparar cada venta con muchas ventas posteriores y, ante coincidencias, volver a recorrer `recurrentes` con `includes` para comprobar si el cliente ya se agregó.
-- **Información a guardar:** recorrer una vez y mantener un `Map` con el conteo de compras por cliente. Al terminar, seleccionar las claves con conteo mayor que uno. El `Map` conserva el orden de primera aparición, por lo que también permite conservar el orden de salida esperado.
-- **Resultado esperado:** O(n) tiempo promedio y O(u) espacio, donde `u` es el número de clientes distintos. Se evita comparar pares y buscar repetidamente en una lista; después se mediría la versión propuesta con los mismos tamaños y datos.
+- **Clientes recurrentes:** se reemplazaron las comparaciones de pares y `includes` por un `Map` de conteos; se ignoran ventas no efectivas.
+- **Recomendaciones comerciales:** una pasada acumula ingresos por ciudad-producto y frecuencias por cliente; el catálogo acotado hace constante el número de pares.
+- **Mejor semana:** los ingresos se agrupan por fecha, se ordenan las fechas y dos punteros mantienen una ventana de hasta siete días.
+- **Reporte:** las funciones analíticas se reutilizan y la lista de clientes recurrentes se limita a diez elementos para mantener la salida acotada.

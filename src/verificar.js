@@ -7,6 +7,7 @@ const {
   clienteParaCupon
 } = require("./comercial");
 const { mejorSemana } = require("./temporal");
+const { seleccionarVentas } = require("./reporte");
 const {
   totalVendido,
   totalVendidoM,
@@ -57,6 +58,13 @@ assert.deepEqual(comboRegaloSugerido(ventas), {
 });
 assert.equal(clienteParaCupon([]), null);
 assert.equal(comboRegaloSugerido([]), null);
+assert.throws(
+  () =>
+    comboRegaloSugerido([
+      { cliente: "C01", producto: "Producto nuevo", cantidad: 1 }
+    ]),
+  /fuera del catálogo/
+);
 console.log("[OK] recomendaciones comerciales y casos vacíos");
 assert.deepEqual(
   mejorSemana([
@@ -69,6 +77,10 @@ assert.deepEqual(
 );
 assert.equal(mejorSemana([]), null);
 console.log("[OK] mejor semana de siete días y caso vacío");
+assert.equal(seleccionarVentas([]).length, 12);
+assert.equal(seleccionarVentas(["0"]).length, 0);
+assert.throws(() => seleccionarVentas(["1.5"]), /entero no negativo/);
+console.log("[OK] selección de datos Día 1 y tamaño generado");
 
 const ventasGeneradas = generarVentas(10000);
 const totalCiudadGeneradoCadena = totalCiudadCadena(

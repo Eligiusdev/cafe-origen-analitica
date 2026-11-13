@@ -331,8 +331,35 @@ Se deja `totalCiudadUnaPasada` como la opción de producción para el servidor c
 
 ## 11. Revisión por compañero del informe v0.2
 
+Esta observación y respuesta corresponden al estado v0.2, antes del MiniReto 9; la complejidad actual de `clientesRecurrentes` es O(n).
+
 **Observación recibida:** el borrador podía dar a entender que `clientesRecurrentes` se comporta como O(n³) en el uso normal, aunque el código solo alcanza ese peor caso con una distribución adversarial. En el generador y las mediciones disponibles, el crecimiento observado es más cercano a O(n²).
 
 **Respuesta y ajuste:** acepto la observación. En `RENDIMIENTO.md` cambié el orden de la clasificación para destacar O(n²) en los datos generados y dejar O(n³) explícitamente como peor caso adversarial. El riesgo sigue siendo el mayor por la latencia observada (63,973 s con 100.000 ventas) y porque entradas adversariales pueden degradarlo más. La proyección de 106,62 minutos para un millón se basa en el tiempo medido con 100.000 ventas y supone crecimiento cuadrático; no es una garantía para cualquier distribución.
 
-La revisión también obtuvo tiempos distintos en una nueva ejecución (aproximadamente 386 ms con 10.000 ventas y 67 s con 100.000). Los conservo como confirmación de variabilidad entre ejecuciones y no sustituyo la medición base del informe: ambas series muestran que la latencia real cambia, mientras la advertencia sobre el peor caso permanece.
+La revisión también obtuvo tiempos distintos en una nueva ejecución (aproximadamente 386 ms con 10.000 ventas y 67 s con 100.000). Se conservaron como evidencia histórica de variabilidad; la implementación que se entrega se optimizó posteriormente en el MiniReto 9.
+
+## 12. Cierre semanal — resumen de los 12 MiniRetos
+
+| MiniReto | Qué se construyó | Estrategia de resolución |
+| :--- | :--- | :--- |
+| 1. Primer tueste: repositorio y datos | Repositorio y muestra de 12 ventas del Día 1. | Inspeccionar el esquema y registrar casos borde antes de calcular indicadores. |
+| 2. Los números del día | Ingresos, unidades, máximo, promedio y ventas por ciudad con ciclos. | Definir acumulador, condición y valor inicial; devolver cero o `null` en entradas vacías. |
+| 3. Del ciclo al método | Versiones con métodos de arreglo, agrupaciones, top de productos y verificaciones. | Contrastar resultados de ciclos y métodos sobre la misma muestra y casos vacíos. |
+| 4. Analítica v0.1 | Reporte ejecutivo de consola y depuración de ciudad duplicada y ticket vacío. | Integrar funciones ya verificadas y reproducir los defectos reportados antes de corregir. |
+| 5. ¿Cuánto cuesta cada reporte? | Generador de ventas y contadores de operaciones. | Separar generación de medición y comparar tamaños crecientes para observar el orden de crecimiento. |
+| 6. El reporte que se volvió lento | Diagnóstico de clientes recurrentes: doble ciclo y `includes`. | Trazar las comparaciones de pares, medir tiempos reales y distinguir costo típico del peor caso. |
+| 7. Tiempo, memoria y cadenas | Comparación de agrupación encadenada con una pasada por ciudad. | Medir arreglos temporales y preferir acumulación directa cuando reduce memoria sin cambiar resultados. |
+| 8. Analítica v0.2 | Informe de complejidad, mediciones, proyecciones y plan de optimización. | Documentar evidencia, declarar hipótesis y no confundir proyección con latencia garantizada. |
+| 9. Clientes recurrentes en tiempo lineal | `clientesRecurrentes` optimizada con conteos en `Map`. | Reemplazar pares e `includes` por una pasada; ignorar compras no efectivas y conservar orden de primera aparición. |
+| 10. Combos de regalo y frecuencias | Producto estrella por ciudad, combo frecuente por historial de cliente y candidato a cupón. | Acumular con mapas y conjuntos; mantener acotados los pares mediante el catálogo de cinco productos y desempatar de forma determinista. |
+| 11. La mejor racha y el presupuesto | Mejor ventana móvil de siete días con dos punteros. | Agrupar ingresos por fecha, ordenar fechas únicas y deslizar la ventana; no se aplica presupuesto porque el proyecto no proporciona un límite. |
+| 12. Analítica v1.0 | Reporte integrado por consola, opción de datos Día 1 o `n` generado, medición comparativa y documentación del producto. | Reutilizar funciones verificadas, medir el comando completo, comparar también el algoritmo optimizado en igualdad de trabajo y validar en clon limpio. |
+
+### Commits de implementación
+
+Los MiniRetos 1–8 se registraron en el historial con sus entregas funcionales (`fd5cb4f`, `5fd8dd0`, `12a5213`, `1b0608a`, `b4a89fc`, `db32d31`, `1422048` y `4273dd8`). Los MiniRetos 9–11 tienen commits dedicados: `fdd6dd3`, `62cfdc4` y `6113096`. El commit de lanzamiento de este cierre corresponde al MiniReto 12 y queda identificado como v1.0 en Git.
+
+### Resultado de la semana
+
+El comando `node src/reporte.js [n]` integra doce secciones, incluyendo la muestra original y datos generados. La recurrencia pasó de doble ciclo a una pasada con `Map`; el reporte final se mantuvo bajo cinco segundos con 100.000 ventas. `RENDIMIENTO.md` separa la medición del reporte completo (que ahora hace más trabajo que v0.1) de la mejora del cuello de botella, para que la comparación no presente como equivalente un alcance distinto.
