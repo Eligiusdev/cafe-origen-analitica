@@ -6,6 +6,7 @@ const {
   comboRegaloSugerido,
   clienteParaCupon
 } = require("./comercial");
+const { mejorSemana } = require("./temporal");
 const {
   totalVendido,
   totalVendidoM,
@@ -57,6 +58,17 @@ assert.deepEqual(comboRegaloSugerido(ventas), {
 assert.equal(clienteParaCupon([]), null);
 assert.equal(comboRegaloSugerido([]), null);
 console.log("[OK] recomendaciones comerciales y casos vacíos");
+assert.deepEqual(
+  mejorSemana([
+    { fecha: "2026-09-08", cantidad: 1, precio: 300 },
+    { fecha: "2026-09-01", cantidad: 1, precio: 100 },
+    { fecha: "2026-09-07", cantidad: 1, precio: 200 },
+    { fecha: "2026-09-15", cantidad: 0, precio: 999 }
+  ]),
+  { inicio: "2026-09-07", fin: "2026-09-08", total: 500 }
+);
+assert.equal(mejorSemana([]), null);
+console.log("[OK] mejor semana de siete días y caso vacío");
 
 const ventasGeneradas = generarVentas(10000);
 const totalCiudadGeneradoCadena = totalCiudadCadena(
